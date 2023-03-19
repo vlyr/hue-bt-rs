@@ -1,62 +1,37 @@
-use btleplug::api::{bleuuid::uuid_from_u16, Central, Manager as _, Peripheral as _, ScanFilter, WriteType, CharPropFlags};
-use btleplug::platform::{Adapter, Manager, Peripheral};
-use std::error::Error;
-use std::thread;
-use std::time::Duration;
-use tokio::time;
-use uuid::Uuid;
-
+pub mod client;
 pub mod color;
+pub use uuid;
+pub mod error;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let manager = Manager::new().await.unwrap();
+pub const COLOR_CHARACTERISTIC: &str = "932c32bd-0005-47a2-835a-a8d455b859dd";
+pub const TEMPERATURE_CHARACTERISTIC: &str = "932c32bd-0004-47a2-835a-a8d455b859dd";
+pub const BRIGHTNESS_CHARACTERISTIC: &str = "932c32bd-0003-47a2-835a-a8d455b859dd";
+pub const NAME_CHARACTERISTIC: &str = "97fe6561-0003-4f62-86e9-b71ee2da3d22";
 
-    let adapters = manager.adapters().await?;
-    let central = adapters.into_iter().nth(0).unwrap();
+#[cfg(test)]
+mod tests {
+    use crate::client::{Client, DeviceSearchFilter};
+    use std::time::Duration;
+    use tokio::time;
 
-    central.start_scan(ScanFilter::default()).await?;
-    time::sleep(Duration::from_secs(5)).await;
+    #[tokio::test]
+    async fn party() {
+        let client = Client::new(DeviceSearchFilter::Name("Lights"))
+            .await
+            .unwrap();
 
-    let light = find_light(&central).await.unwrap();
+        let colors = &["#FF0000", "#00FFFF", "#FF00FF", "#0000FF"];
+        let mut idx = 0;
 
-    light.connect().await?;
+        for _ in 0..1000 {
+            client.set_color(colors[idx]).await.unwrap();
 
-    light.discover_services().await?;
-
-    let chars = light.characteristics();
-    // party
-    let colors = &["#FF0000", "#00FFFF", "#FF00FF", "#0000FF"]; 
-    let mut idx = 0;
-    for x in chars.iter().filter(|x| x.uuid == Uuid::parse_str("932c32bd-0005-47a2-835a-a8d455b859dd").unwrap()) {
-        println!("{}", x.uuid);
-        for i in 0..1000 {
-            light.write(x, &color::color(colors[idx]).unwrap(), WriteType::WithoutResponse).await?;
             if idx == 3 {
                 idx = 0;
             } else {
                 idx += 1;
             }
-            time::sleep(Duration::from_millis(50)).await;
+            time::sleep(Duration::from_millis(2000)).await;
         }
     }
-
-    Ok(())
-}
-
-async fn find_light(central: &Adapter) -> Option<Peripheral> {
-    println!("{:#?}", central.peripherals().await.unwrap().iter().map(|x| async { x.properties().await.unwrap().unwrap() }));
-    for p in central.peripherals().await.unwrap() {
-        if p.properties()
-            .await
-            .unwrap()
-            .unwrap()
-            .local_name
-            .iter()
-            .any(|name| name.contains("Lights"))
-        {
-            return Some(p);
-        }
-    }
-    None
 }

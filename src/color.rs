@@ -13,6 +13,8 @@ impl fmt::Display for ColorError {
     }
 }
 
+impl ::std::error::Error for ColorError {}
+
 pub fn convert(rgb: &[u8; 3]) -> Result<[u8; 4], ColorError> {
     let scale = 0xff;
     let mut adjusted = rgb.iter().map(|&chan| chan.max(1)).collect::<Vec<u8>>();
@@ -31,7 +33,11 @@ pub fn convert(rgb: &[u8; 3]) -> Result<[u8; 4], ColorError> {
 }
 
 pub fn color(hexstr: &str) -> Result<[u8; 4], ColorError> {
-    let hexstr_no_hash = if hexstr.len() == 7 { &hexstr[1..] } else { hexstr };
+    let hexstr_no_hash = if hexstr.len() == 7 {
+        &hexstr[1..]
+    } else {
+        hexstr
+    };
 
     let color_bits = [
         u8::from_str_radix(&hexstr_no_hash[..2], 16).map_err(|_| ColorError::InvalidHex)?,
