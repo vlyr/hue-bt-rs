@@ -26,7 +26,6 @@ pub fn convert(rgb: &[u8; 3]) -> Result<[u8; 4], ColorError> {
         .collect::<Vec<u8>>();
 
     if adjusted.iter().sum::<u8>() > scale {
-        println!("AIJAIJAIAJ");
         return Err(ColorError::InvalidHex);
     }
 

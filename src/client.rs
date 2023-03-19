@@ -104,12 +104,27 @@ impl Client {
             .find(|x| x.uuid == Uuid::parse_str(STATE_CHARACTERISTIC).unwrap())
         {
             Some(c) => {
-                let value = self.inner.read(c).await.unwrap();
-                println!("{:#?}", value);
-                Some(LightState::On)
+                let value = self.inner.read(c).await.unwrap()[0];
+                Some(LightState::from(value))
             }
             None => None,
         }
+    }
+
+    /// Reads the state of the light and writes the opposite state value.
+    pub async fn toggle(&self) -> Result<()> {
+        let current_state = self.read_state().await;
+
+        if let Some(curr) = current_state {
+            let new_state = match curr {
+                LightState::On => LightState::Off,
+                LightState::Off => LightState::On,
+            };
+
+            self.set_state(new_state).await?;
+        }
+
+        Ok(())
     }
     /// Sets the colors of the light. `hex_string` is a 6-digit hex string, with or without a #-prefix.
     pub async fn set_color<T>(&self, hex_string: T) -> Result<()>

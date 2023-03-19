@@ -19,22 +19,32 @@ pub enum DeviceSearchFilter<'a> {
 /// Abstraction for Off = 0 and On = 1.
 #[repr(u8)]
 pub enum LightState {
-    Off = 0,
-    On = 1,
+    Off = 0x00,
+    On = 0x01,
+}
+
+impl From<u8> for LightState {
+    fn from(data: u8) -> Self {
+        match data {
+            0 => LightState::Off,
+            1 => LightState::On,
+            _ => panic!("Invalid light state provided."),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::client::Client;
+    use std::env;
     use std::time::Duration;
     use tokio::time;
 
     #[tokio::test]
     async fn party() {
-        let client = Client::new(DeviceSearchFilter::Name("Lights"))
-            .await
-            .unwrap();
+        let light = env::var("LIGHT_NAME").unwrap();
+        let client = Client::new(DeviceSearchFilter::Name(&light)).await.unwrap();
 
         let colors = &["#FF0000", "#00FFFF", "#FF00FF", "#0000FF"];
         let mut idx = 0;
@@ -47,7 +57,25 @@ mod tests {
             } else {
                 idx += 1;
             }
-            time::sleep(Duration::from_millis(2000)).await;
+            time::sleep(Duration::from_millis(300)).await;
         }
+    }
+
+    #[tokio::test]
+    async fn toggle_state() {
+        let light = env::var("LIGHT_NAME").unwrap();
+        let client = Client::new(DeviceSearchFilter::Name(&light)).await.unwrap();
+
+        for _ in 0..10 {
+            client.toggle().await.unwrap();
+            time::sleep(Duration::from_millis(300)).await;
+        }
+    }
+    #[tokio::test]
+    async fn set_name() {
+        let light = env::var("LIGHT_NAME").unwrap();
+        let client = Client::new(DeviceSearchFilter::Name(&light)).await.unwrap();
+
+        client.set_light_name("Hue BT Rust testing").await.unwrap();
     }
 }

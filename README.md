@@ -2,6 +2,10 @@
 
 Information and guides on how to connect to your light are coming soon.
 
+## Notes
+Usually, a delay of ~300ms is enough to let the light change state (color, temperature, etc.) fully. 
+
+## Example
 ```rs
 use hue_bt::client::{Client, DeviceSearchFilter};
 use std::time::Duration;
