@@ -1,10 +1,10 @@
-use hue_bt::client::{Client, DeviceSearchFilter};
+use hue_bt::{client::Client, DeviceSearchFilter};
 use std::time::Duration;
 use tokio::time;
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new(DeviceSearchFilter::Name("Lights"))
+    let client = Client::new(DeviceSearchFilter::Name("Valot"))
         .await
         .unwrap();
 

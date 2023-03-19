@@ -1,8 +1,8 @@
-use crate::color;
 use crate::error::{Error, Result};
 use crate::uuid::Uuid;
+use crate::{color, DeviceSearchFilter, LightState};
 use crate::{
-    BRIGHTNESS_CHARACTERISTIC, COLOR_CHARACTERISTIC, NAME_CHARACTERISTIC,
+    BRIGHTNESS_CHARACTERISTIC, COLOR_CHARACTERISTIC, NAME_CHARACTERISTIC, STATE_CHARACTERISTIC,
     TEMPERATURE_CHARACTERISTIC,
 };
 use btleplug::api::{Central, Manager as _, Peripheral as _, ScanFilter, WriteType};
@@ -10,11 +10,21 @@ use btleplug::platform::{Adapter, Manager, Peripheral};
 use std::time::Duration;
 use tokio::time;
 
-pub enum DeviceSearchFilter<'a> {
-    Name(&'a str),
-    MAC(&'a str),
-}
+/// Basic client abstraction that has a bluetooth peripheral as the inner layer.
+///```
+/// use hue_bt::{client::Client, DeviceSearchFilter};
+/// use std::time::Duration;
+/// use tokio::time;
 
+/// #[tokio::main]
+/// async fn main() {
+///     let client = Client::new(DeviceSearchFilter::Name("Lights"))
+///         .await
+///         .unwrap();
+///
+///     client.set_color("#FF0000").await.unwrap();
+/// }
+///```
 pub struct Client {
     inner: Peripheral,
 }
@@ -70,6 +80,36 @@ impl Client {
                 .await?;
         }
         Ok(())
+    }
+
+    pub async fn set_state(&self, value: LightState) -> Result<()> {
+        let chars = self.inner.characteristics();
+
+        if let Some(c) = chars
+            .iter()
+            .find(|x| x.uuid == Uuid::parse_str(STATE_CHARACTERISTIC).unwrap())
+        {
+            self.inner
+                .write(c, &[value as u8], WriteType::WithoutResponse)
+                .await?;
+        }
+        Ok(())
+    }
+
+    pub async fn read_state(&self) -> Option<LightState> {
+        let chars = self.inner.characteristics();
+
+        match chars
+            .iter()
+            .find(|x| x.uuid == Uuid::parse_str(STATE_CHARACTERISTIC).unwrap())
+        {
+            Some(c) => {
+                let value = self.inner.read(c).await.unwrap();
+                println!("{:#?}", value);
+                Some(LightState::On)
+            }
+            None => None,
+        }
     }
     /// Sets the colors of the light. `hex_string` is a 6-digit hex string, with or without a #-prefix.
     pub async fn set_color<T>(&self, hex_string: T) -> Result<()>

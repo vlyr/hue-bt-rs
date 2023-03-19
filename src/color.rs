@@ -15,6 +15,7 @@ impl fmt::Display for ColorError {
 
 impl ::std::error::Error for ColorError {}
 
+/// Conversion from RGB to CIE 1931.
 pub fn convert(rgb: &[u8; 3]) -> Result<[u8; 4], ColorError> {
     let scale = 0xff;
     let mut adjusted = rgb.iter().map(|&chan| chan.max(1)).collect::<Vec<u8>>();
