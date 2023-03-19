@@ -78,4 +78,27 @@ mod tests {
 
         client.set_light_name("Hue BT Rust testing").await.unwrap();
     }
+
+    #[tokio::test]
+    async fn set_temperature() {
+        let light = env::var("LIGHT_NAME").unwrap();
+        let client = Client::new(DeviceSearchFilter::Name(&light)).await.unwrap();
+
+        client.set_temperature(40, 1).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn get_temperature() {
+        let light = env::var("LIGHT_NAME").unwrap();
+        let client = Client::new(DeviceSearchFilter::Name(&light)).await.unwrap();
+
+        client.get_temperature().await.unwrap();
+    }
+    #[tokio::test]
+    async fn get_all_values() {
+        let light = env::var("LIGHT_NAME").unwrap();
+        let client = Client::new(DeviceSearchFilter::Name(&light)).await.unwrap();
+
+        client.get_all_values().await.unwrap();
+    }
 }

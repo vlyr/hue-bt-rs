@@ -54,6 +54,14 @@ impl Client {
         Ok(Self { inner: light })
     }
 
+    pub async fn get_all_values(&self) -> Result<()> {
+        for c in self.inner.characteristics() {
+            let val = self.inner.read(&c).await;
+            println!("{:#?}: {:#?}", c.uuid, val);
+        }
+        Ok(())
+    }
+
     pub async fn set_brightness(&self, value: u8) -> Result<()> {
         let chars = self.inner.characteristics();
 
@@ -68,16 +76,31 @@ impl Client {
         Ok(())
     }
 
-    pub async fn set_temperature(&self, value: u8) -> Result<()> {
+    /// Not usable yet.
+    pub async fn set_temperature(&self, value1: u8, value2: u8) -> Result<()> {
         let chars = self.inner.characteristics();
 
         if let Some(c) = chars
             .iter()
             .find(|x| x.uuid == Uuid::parse_str(TEMPERATURE_CHARACTERISTIC).unwrap())
         {
+            // Gotta figure out what to write
             self.inner
-                .write(c, &[value], WriteType::WithoutResponse)
+                .write(c, &[value1, value2], WriteType::WithoutResponse)
                 .await?;
+        }
+        Ok(())
+    }
+
+    pub async fn get_temperature(&self) -> Result<()> {
+        let chars = self.inner.characteristics();
+
+        if let Some(c) = chars
+            .iter()
+            .find(|x| x.uuid == Uuid::parse_str(TEMPERATURE_CHARACTERISTIC).unwrap())
+        {
+            let val = self.inner.read(c).await?;
+            println!("{:#?}", val);
         }
         Ok(())
     }
